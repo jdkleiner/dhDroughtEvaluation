@@ -13,15 +13,6 @@ require(data.table)
 require(zoo)
 library(httr)
 
-#---dataRetrieval method-----------------------
-###siteNumber <- "381002078094201"
-###data <- readNWISgwl(siteNumber, '','')
-###tail(data)
-###latest_row <- data[length(data$lev_dt),]
-###gw_lvl <- latest_row$lev_va
-###gw_lvl_date <- latest_row$lev_dt
-#----------------------------------------------
-
 #Specify the site of interest
 #site <- "http://localhost/d.dh"    
 site <- "http://deq1.bse.vt.edu/d.bet" 
@@ -89,20 +80,10 @@ rollmean_7day <- rollapply(data$mean, 7, mean, na.rm=TRUE)  #BUILD VECTOR OF 7-D
   rollmean_7day  <- append(rollmean_7day , NA, after = 0)
   rollmean_7day  <- append(rollmean_7day , NA, after = 0)
 data$rollmean_7day <- rollmean_7day                         #CREATE COLUMN OF 7-DAY ROLLING MEANS ON DATAFRAME
-#tail(rollmean_7day)
-#head(rollmean_7day)
-#print(rollmean_7day)
 
 latest_row <- data[length(data$rollmean_7day),] #most recent 7-day rolling avg gwl
 gw_lvl <- latest_row$rollmean_7day
 print(gw_lvl) #print most recent 7-day rolling average daily mean gwl reading 
-
-
-#--------------------------------------------------------------------------------------------
-#Calculate 7-Day Average Streamflow for every day of the historic record
-#...CURRENTLY ONLY GENERATING PERCENTILES FROM DAILY VALUES!! - not 7day averages
-#--------------------------------------------------------------------------------------------
-
 
 #Create dataframe of all month's names and numeric values
 months <- c('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')
