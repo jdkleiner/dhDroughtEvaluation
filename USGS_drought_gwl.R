@@ -6,6 +6,7 @@
 #     nonex_pct (PROPERTY ON TIMESERIES ABOVE THAT IS CREATED EACH DAY THE SCRIPT IS RUN)
 #
 #----------------------------------------------------------------------------------------------------------
+
 rm(list = ls())  #clear variables
 #library(waterData) #https://cran.r-project.org/web/packages/waterData/waterData.pdf
 library(dataRetrieval) #https://cran.r-project.org/web/packages/dataRetrieval/dataRetrieval.pdf
