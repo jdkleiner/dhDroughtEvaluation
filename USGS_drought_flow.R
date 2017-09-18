@@ -16,7 +16,7 @@ library(stringr)
 
 #Specify the site of interest
 #site <- "http://localhost/d.dh"    
-site <- "http://deq1.bse.vt.edu/d.bet"
+site <- "http://deq1.bse.vt.edu/d.dh"
 fxn_locations <- "C:\\Users\\nrf46657\\Desktop\\VAHydro Development\\Drought\\server_code\\"          #Specify location of supporting function .R files
 
 #retrieve rest token
