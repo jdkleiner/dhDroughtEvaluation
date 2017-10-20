@@ -6,7 +6,6 @@
 #     nonex_pct (PROPERTY ON TIMESERIES ABOVE THAT IS CREATED EACH DAY THE SCRIPT IS RUN)
 #
 #----------------------------------------------------------------------------------------------------------
-
 rm(list = ls())  #clear variables
 #library(waterData) #https://cran.r-project.org/web/packages/waterData/waterData.pdf
 library(dataRetrieval) #https://cran.r-project.org/web/packages/dataRetrieval/dataRetrieval.pdf
@@ -38,7 +37,8 @@ for (j in 1:length(hydrocodes)) {
   print(paste("USGS siteNumber: ", siteNumber, sep='')); 
   siteNumber = unlist(strsplit(siteNumber, split='_', fixed=TRUE))[2]
 
-welldata <- whatNWISdata(siteNumber, service = "all", parameterCd = "all",statCd = "all")
+#welldata <- whatNWISdata(siteNumber, service = "all", parameterCd = "all",statCd = "all")
+welldata <- whatNWISdata(siteNumber = siteNumber)#, service = "all", parm_cd = "all",stat_cd = "all")
 
 #Parameter code '72019' = Depth to water level, feet below land surface (ft) https://help.waterdata.usgs.gov/code/parameter_cd_nm_query?parm_nm_cd=%25level%25&fmt=html
 gwl_row <- which(welldata$parm_cd == 72019)
