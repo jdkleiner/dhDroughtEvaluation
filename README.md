@@ -13,3 +13,6 @@ This repo will house R scripts for retrieving NWIS historic gage data, processin
 	-something strange happened with both gwl and flow 
 	--propvalues = 0 and no propcode set 
 	--problem appears to have been corrected the following day 
+	
+	12/8/17
+	-gwl and flow look good
