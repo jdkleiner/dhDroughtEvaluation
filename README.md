@@ -19,3 +19,6 @@ This repo will house R scripts for retrieving NWIS historic gage data, processin
 	
 	12/13/17
 	-flow only ran for 4 gages 
+	
+	12/20/17
+	-gwl and flow look good
