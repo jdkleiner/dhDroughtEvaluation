@@ -15,14 +15,13 @@ library(httr)
 library(stringr)
 
 #Specify the site of interest
-#site <- "http://localhost/d.dh"    
-site <- "http://deq1.bse.vt.edu/d.dh"
-fxn_locations <- "C:\\Users\\nrf46657\\Desktop\\VAHydro Development\\Drought\\server_code\\"          #Specify location of supporting function .R files
+site <- "http://localhost/d.dh"    
+#site <- "http://deq1.bse.vt.edu/d.dh"
 
-#retrieve rest token
-source(paste(fxn_locations,"dh_rest_token.R", sep = ""));     #loads function used to generate rest session token
-dh_rest_token (site, token)
-token <- dh_rest_token(site, token)
+#Cross-site Request Forgery Protection (Token required for POST and PUT operations)
+csrf_url <- paste(site,"/restws/session/token/",sep="");
+csrf <- GET(url=csrf_url,authenticate("restws_admin","@dmin123REST"));
+token <- content(csrf);
 
 #https://cran.r-project.org/web/packages/waterData/waterData.pdf
 #https://cran.r-project.org/web/packages/dataRetrieval/dataRetrieval.pdf
@@ -37,6 +36,8 @@ gagelist$USGS_GAGES <- USGS_GAGES[,2]
 USGS_GAGES <- gagelist$USGS_GAGES 
 
 #j<-10
+#j<-9
+#j<-6
 
 #Begin loop to run through each USGS gage 
 for (j in 1:length(USGS_GAGES)) {
@@ -137,6 +138,16 @@ q_7day_cfs <- rolling_7day_avg
 nonex_propcode <- nonex_propcode
 nonex_propvaue <- rolling_percentile
 
+#-----------------------------------------------
+#If statement to handle negative flow values resulting from Ice buildup at gage sites (or any other equipment failures)
+
+if (latest_row$rollmean_7day < 0.00) {   
+  q_7day_cfs <- NULL
+  nonex_propcode <- "No Data"
+  nonex_propvaue <- NULL
+} 
+#-----------------------------------------------
+
 #Convert USGS Site No. to dH Hydrocode 
 siteNumber <- USGS_GAGE_ID
 hydrocode <- paste("usgs_",siteNumber, sep="")
@@ -168,6 +179,7 @@ proplist <- list(
   drought_status_stream = FALSE
 );
 
+#i<-1
 #Begin Loop to REST properties one at a time 
 for (i in 1:length(propvars)) {
   
@@ -235,6 +247,9 @@ for (i in 1:length(propvars)) {
                  body = pbody, 
                  encode = "json"
       );
+      
+      #content(sub)
+      
       #Create Timeseries if it does not exist        
     } else {
       print ("Timeseries does not exist - POST q_7day_cfs");
