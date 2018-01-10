@@ -16,12 +16,13 @@ library(httr)
 #Specify the site of interest
 #site <- "http://localhost/d.dh"    
 site <- "http://deq1.bse.vt.edu/d.dh" 
-fxn_locations <- "C:\\Users\\nrf46657\\Desktop\\VAHydro Development\\Drought\\server_code\\"          #Specify location of supporting function .R files
+#fxn_locations <- "C:\\Users\\nrf46657\\Desktop\\VAHydro Development\\Drought\\server_code\\"          #Specify location of supporting function .R files
 
-#retrieve rest token
-source(paste(fxn_locations,"dh_rest_token.R", sep = ""));     #loads function used to generate rest session token
-dh_rest_token (site, token)
-token <- dh_rest_token(site, token)
+#Cross-site Request Forgery Protection (Token required for POST and PUT operations)
+csrf_url <- paste(site,"/restws/session/token/",sep="");
+csrf <- GET(url=csrf_url,authenticate("FANCYUSERNAME","FANCYPASSWORD"));
+token <- content(csrf);
+
 
 #Pull in list of all drought USGS well dH Features 
 URL <- paste(site,"drought-wells-export", sep = "/");
