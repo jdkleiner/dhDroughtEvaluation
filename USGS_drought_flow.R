@@ -20,7 +20,7 @@ site <- "http://localhost/d.dh"
 
 #Cross-site Request Forgery Protection (Token required for POST and PUT operations)
 csrf_url <- paste(site,"/restws/session/token/",sep="");
-csrf <- GET(url=csrf_url,authenticate("restws_admin","@dmin123REST"));
+csrf <- GET(url=csrf_url,authenticate("FANCYUSERNAME","FANCYPASSWORD"));
 token <- content(csrf);
 
 #https://cran.r-project.org/web/packages/waterData/waterData.pdf
