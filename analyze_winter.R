@@ -224,7 +224,7 @@ scale_color_manual(
   name="")
 
 #add secondary y-axis to plot
-plt<-plt+scale_y_continuous(sec.axis = sec_axis(~./0.1, name = "Non-exceedance Probability Estimate"),breaks= pretty_breaks())
+plt<-plt+scale_y_continuous(sec.axis = sec_axis(~./0.1, name = "Probability Estimate"),breaks= pretty_breaks())
 #plt<-plt+ggtitle(paste("Distribution of Historic Winter Flows for", gage[i],"\n\nP_est Month: ",month,"\nb0= ",b0,"\nb1= ",b1))
 
 #--------------------------------------------------------------------------
