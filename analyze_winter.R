@@ -2,7 +2,7 @@
 # This code will be updated using "chron" every March 1st
 
 #file_directory <- "/var/www/html/images/dh"  
-file_directory <- "C:\\Users\\nrf46657\\Desktop\\MLLR\\"
+file_directory <- "C:\\Users\\nrf46657\\Desktop\\VAHydro Development\\GitHub\\dhDroughtEvaluation\\"
 base_url <- 'http://deq1.bse.vt.edu/d.dh' #needed for REST functions
 
 #fid <- 58655 #needed for retrieving beta properties via REST
@@ -22,9 +22,9 @@ library('lubridate')
 library('ggplot2')
 library('scales')
 library('httr')
-source(paste(file_directory,"P_est.R", sep = "")) #P_est function used to generate probability curve
 source(paste(file_directory,"rest_functions.R", sep = ""))
-token <- rest_token (base_url, token, rest_uname = 'private', rest_pw = 'private') #token needed for REST
+source(paste(file_directory,"./rest_auth.private",sep=""));
+token <- rest_token (base_url, token, rest_uname = rest_uname, rest_pw = rest_pw) #token needed for REST
 
 for (i in 1:length(gage)) {
 
@@ -168,7 +168,7 @@ for (i in 1:length(gage)) {
 	
 #--------------------------------------------------------------------------
 #Add MLLR Curve to Plot
-	source(paste(file_directory,"P_est.R", sep = "")) 
+	P_est <- function(b0, b1, x) {1/(1+exp(-(b0 + b1*x)))}
 	
 #	as.numeric(max(as.character(historic[,4])))
 #	historic <- data[-1,]
@@ -179,12 +179,12 @@ for (i in 1:length(gage)) {
 	#historci_no_ice <- historic[-which(historic[,4]== "Ice"),4]
 	
 	#remove any rows with "Ice" values for locating maximum historic flow value 
-#	if (length(which(historic[,4]== "Ice")) != 0 ){
-#	
-#	  historic_no_ice <- historic[-which(historic[,4]== "Ice"),]
-#	} else {
-#	  historic_no_ice <- historic
-#  }
+	if (length(which(historic[,4]== "Ice")) != 0 ){
+	
+	  historic_no_ice <- historic[-which(historic[,4]== "Ice"),]
+	} else {
+	  historic_no_ice <- historic
+  }
 
 	
 #	historic_tail <- tail(historic_no_ice[order(historic_no_ice[,4]),])
@@ -194,7 +194,7 @@ for (i in 1:length(gage)) {
 
 #x <- c(0:1375)
 	#xmax <- as.numeric(max(as.character(historic_no_ice[,4])))
-	xmax <- as.numeric(as.character(quantile(as.numeric(as.character(historic[,4])),0.95)))
+	xmax <- as.numeric(as.character(quantile(as.numeric(as.character(historic_no_ice[,4])),0.95)))
 x <- c(0:xmax)
 
 #x <- c(0:800)
