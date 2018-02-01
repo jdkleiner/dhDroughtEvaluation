@@ -25,3 +25,6 @@ This repo will house R scripts for retrieving NWIS historic gage data, processin
 
 	1/19/18
 	-need to update to use REST functions 
+	
+	2.1.18
+	-need to update MLLR code to handle "Ice" 
