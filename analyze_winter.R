@@ -2,14 +2,13 @@
 # This code will be updated using "chron" every March 1st
 
 #file_directory <- "/var/www/html/images/dh"  
-file_directory <- "C:\\Users\\nrf46657\\Desktop\\VAHydro Development\\GitHub\\dhDroughtEvaluation\\"
+file_directory <- "C:\\Users\\nrf46657\\Desktop\\VAHydro Development\\GitLab\\VAHydro\\dh_drought\\src\\r\\"
 base_url <- 'http://deq1.bse.vt.edu/d.dh' #needed for REST functions
 
-#fid <- 58655 #needed for retrieving beta properties via REST
-fid <- 58623 
+#fid needed for retrieving beta properties via REST
+fid <- 58623 #fid <- 58655 
 target_year=2018
-#gage <- c(02039500) 
-gage <- c(02016000) 
+gage <- c(02016000)  #gage <- c(02039500) 
 
 gage <- sprintf("%08d", gage)
 gage <- as.character(gage)
@@ -89,7 +88,7 @@ for (i in 1:length(gage)) {
 	median <- round(median(na.omit(n_f_flow)), digits=0) # the median winter flow for the entire record	
 
 	# set up data frame for the most recent and median winter flow values
-	names <- c("2018 Winter Flow", "Median Winter Flow")
+	names <- c(paste(target_year," Winter Flow",sep=""), "Median Winter Flow")
 	values <- c(most_recent, median)
 	lines <- data.frame(names, values)
 
@@ -133,22 +132,15 @@ for (i in 1:length(gage)) {
 	                         'b0'=character(),
 	                         'b1'=character(),
 	                         stringsAsFactors=FALSE)
-	
-#	beta_table_i <- data.frame(month[m],b0,b1)
-#	beta_table <- rbind(beta_table, beta_table_i)
-	
+
 	#m <- 1
 	for (m in 1:length(month)) {
 
-	#paste('mllr_beta0_',month[m],'_10',sep='')
-	
 	#retrieve b0 property
 	b0_inputs <- list(featureid = fid,varkey = paste('mllr_beta0_',month[m],'_10',sep=''),entity_type = 'dh_feature')
 	b0 <- getProperty (b0_inputs, base_url, prop)
 	b0 <- as.numeric(as.character(b0$propvalue))
-	
-	#month[m] <- b0
-	
+
 	#retrieve b1 property
 	b1_inputs <- list(featureid = fid,varkey = paste('mllr_beta1_',month[m],'_10',sep=''),entity_type = 'dh_feature')
 	b1 <- getProperty (b1_inputs, base_url, prop)
@@ -162,22 +154,11 @@ for (i in 1:length(gage)) {
 	
 	}
 	print(beta_table)
-	#--------------------------------------------------------------------------	
-	
 
 	
-#--------------------------------------------------------------------------
-#Add MLLR Curve to Plot
+#Add MLLR Curves to Plot
 	P_est <- function(b0, b1, x) {1/(1+exp(-(b0 + b1*x)))}
-	
-#	as.numeric(max(as.character(historic[,4])))
-#	historic <- data[-1,]
-	
-#	myData <- historic["Ice",4]
-#	historic["Ice",4]
-	
-	#historci_no_ice <- historic[-which(historic[,4]== "Ice"),4]
-	
+
 	#remove any rows with "Ice" values for locating maximum historic flow value 
 	if (length(which(historic[,4]== "Ice")) != 0 ){
 	
@@ -186,23 +167,10 @@ for (i in 1:length(gage)) {
 	  historic_no_ice <- historic
   }
 
-	
-#	historic_tail <- tail(historic_no_ice[order(historic_no_ice[,4]),])
-#	historic_tail <-	historic_tail[-6,]
-
-#	historic_no_ice <- historic_tail
-
-#x <- c(0:1375)
-	#xmax <- as.numeric(max(as.character(historic_no_ice[,4])))
+	#need to determine x-range to use for plotting mllr curves, currently set to go from zero to 95th percentile flow
+	#will cause number of histogram bins to be different than they were before
 	xmax <- as.numeric(as.character(quantile(as.numeric(as.character(historic_no_ice[,4])),0.95)))
-x <- c(0:xmax)
-
-#x <- c(0:800)
-###P_est <- (P_est(b0, b1, x))*10
-#P_est <- P_est*10
-#plot(P_est)
-
-###mllr_curve <- data.frame(x,(P_est))
+  x <- c(0:xmax)
 
 july_est <- (P_est(beta_table[which(beta_table$month.m == "july"),"b0"], beta_table[which(beta_table$month.m == "july"),"b1"], x))*10
 july_mllr <- data.frame(x,(july_est))
@@ -225,17 +193,8 @@ scale_color_manual(
 
 #add secondary y-axis to plot
 plt<-plt+scale_y_continuous(sec.axis = sec_axis(~./0.1, name = "Probability Estimate"),breaks= pretty_breaks())
-#plt<-plt+ggtitle(paste("Distribution of Historic Winter Flows for", gage[i],"\n\nP_est Month: ",month,"\nb0= ",b0,"\nb1= ",b1))
-
-#--------------------------------------------------------------------------
 
 # END plotting function
 ggsave(file=filename, path = file_directory , width=6, height=6)	
 }
-
-#t<-plt+ geom_histogram(aes(x=n_f_flow), colour="black", fill = "lightblue",bins = 30)
-#h = hist(n_f_flow, plot = F)
-#max.h.count = max(h$counts)
-
-
 
