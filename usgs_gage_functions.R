@@ -21,7 +21,37 @@ streamgage_historic <- function(gageid){
     gage_data <- gage_data 
   }
   
-}
+} #Close Function
 
+
+clean_historic <- function(historic){
+    # ******************************************************************************************
+    # Remove any rows with "Ice", "P Ice" or "P Eqp" values for Flow_cd
+    # ******************************************************************************************
+    if (length(which(historic[,5]== "Ice")) != 0 ){
+      print("Removing Ice Flows")
+      historic <- historic[-which(historic[,5]== "Ice"),]
+    }
+      
+    if (length(which(historic[,5]== "P Ice")) != 0 ){
+      print("Removing Ice Flows")
+      historic <- historic[-which(historic[,5]== "P Ice"),]
+    }
+      
+    if (length(which(historic[,5]== "P Eqp")) != 0 ){
+      print("Removing P Eqp Flows")
+      historic <- historic[-which(historic[,5]== "P Eqp"),]
+    }
+      
+    if (length(which(historic[,4] < 0.0)) != 0 ){
+      print("Removing Negative Flow Values")
+      historic <- historic[-which(historic[,4] < 0.0),]
+    }
+  
+    historic <- historic
+} #Close Function
+    
+    
+    
 # Additional groundwater level function to come....
 #groundwater_historic

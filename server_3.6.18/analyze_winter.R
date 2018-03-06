@@ -1,13 +1,10 @@
 ## Code to calculate the current drought condition estimates and create a graph to show all estimates by month and threshold 
 # This code will be updated using "chron" every March 1st
 
-#-------------------------------------------------
-# FOR TESTING A SINGLE GAGE
-#
-fid <- 58569
-target_year=2018
-gage <- c(01638350) 
-#-------------------------------------------------
+#fid needed for retrieving beta properties via REST
+#fid <- 58567 
+#target_year=2018
+#gage <- c(01636316) 
 
 gage <- sprintf("%08d", gage)
 gage <- as.character(gage)
@@ -24,17 +21,12 @@ library('httr')
 # config.local.private sets: lib_directory, auth_directory, base_url, file_directory
 # if running in RStudio this will not work as it forces path to the "working directory"
 # Must open and run contents of config.local.private once per session
-
-#source("/var/www/R/config.local.private"); #SERVER
-source("C:\\Users\\nrf46657\\Desktop\\VAHydro Development\\GitHub\\dhDroughtEvaluation\\config.local.private"); #JK LOCAL
-
+source("/var/www/R/config.local.private"); 
 # load libraries
 source(paste(vahydro_directory,"rest_functions.R", sep = "/")); 
-source(paste(drought_directory,"usgs_gage_functions.R",sep="/")); 
 source(paste(auth_directory,"rest.private",sep="/")); 
 token <- rest_token (base_url, token, rest_uname = rest_uname, rest_pw = rest_pw) #token needed for REST
 
-#i <- 1
 for (i in 1:length(gage)) {
 
 	# Initialize variables
@@ -47,10 +39,26 @@ for (i in 1:length(gage)) {
 	#elem_info <- scan(elem_url, what="character", sep=",")
 	#elid <- elem_info[3]
 
-	# Retrieve all historic flow data, clean raw data to remove no data situations
-	historic_raw <- streamgage_historic(gage[i])
-	historic <- clean_historic(historic_raw)
 
+	# Read flow for entire record to gather all historical flow data
+	url_base <- "https://waterservices.usgs.gov/nwis/dv/?site=";
+	url <- paste(url_base, gage[i], "&variable=00060&format=rdb&startDT=1838-01-01", sep="")	
+	data <- try(read.table(url, skip = 2, comment.char = "#", header=TRUE))
+
+	# Continuing with no data available
+	if (class(data)=="try-error") { 
+                print(paste("NWIS Responded NO DATA for", url, sep=''));
+                next
+	} 
+
+	# Remove gages that don't even have a column for flow data on USGS
+	if (ncol(data) < 4) {
+		print(paste("NWIS Responded NO DATA for", url, sep=''));
+		next
+	}
+
+	historic <- data[-1,] # delete row that has no significance for this calculation
+	
 	# Find first and last date on record
 	start.date <- as.Date(as.character(historic[2,3]))
 	end.date <- as.Date(as.character(tail(historic[,3],1))) 
@@ -68,7 +76,7 @@ for (i in 1:length(gage)) {
 		EndDate <- as.Date(paste((year+1), "-02-28", sep=""))
 	
 		# Extract flow data for the specified year from Nov - Feb (gathering all historic winter flows)	
-		f <- historic[,4][(as.Date(historic$Date)>=StartDate) & (as.Date(historic$Date)<=EndDate)]
+		f <- historic[,4][(as.Date(historic$datetime)>=StartDate) & (as.Date(historic$datetime)<=EndDate)]
 			
 		# Determine the average November through February mean daily flow                  
 		n_f_flow[z] <- mean(na.omit(as.numeric(as.vector(f))))
@@ -180,9 +188,17 @@ for (i in 1:length(gage)) {
   #Add MLLR Curves to Plot
 	P_est <- function(b0, b1, x) {1/(1+exp(-(b0 + b1*x)))}
 
+	#remove any rows with "Ice" values for locating maximum historic flow value 
+	if (length(which(historic[,4]== "Ice")) != 0 ){
+	
+	  historic_no_ice <- historic[-which(historic[,4]== "Ice"),]
+	} else {
+	  historic_no_ice <- historic
+	}
+	
 	#need to determine x-range to use for plotting mllr curves, currently set to go from zero to 95th percentile flow
 	#will cause number of histogram bins to be different than they were before
-	xmax <- as.numeric(as.character(quantile(as.numeric(as.character(historic[,4])),0.95, na.rm=TRUE)))
+	xmax <- as.numeric(as.character(quantile(as.numeric(as.character(historic_no_ice[,4])),0.95, na.rm=TRUE)))
 	x <- c(0:xmax)
 	
 	# **************************************

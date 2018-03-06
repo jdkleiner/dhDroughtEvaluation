@@ -4,9 +4,9 @@
 #-------------------------------------------------
 # FOR TESTING A SINGLE GAGE
 #
-fid <- 58569
-target_year=2018
-gage <- c(01638350) 
+#fid <- 58660
+#target_year=2018
+#gage <- c(02042500) 
 #-------------------------------------------------
 
 gage <- sprintf("%08d", gage)
@@ -25,8 +25,8 @@ library('httr')
 # if running in RStudio this will not work as it forces path to the "working directory"
 # Must open and run contents of config.local.private once per session
 
-#source("/var/www/R/config.local.private"); #SERVER
-source("C:\\Users\\nrf46657\\Desktop\\VAHydro Development\\GitHub\\dhDroughtEvaluation\\config.local.private"); #JK LOCAL
+source("/var/www/R/config.local.private"); #SERVER
+#source("C:\\Users\\nrf46657\\Desktop\\VAHydro Development\\GitHub\\dhDroughtEvaluation\\config.local.private"); #JK LOCAL
 
 # load libraries
 source(paste(vahydro_directory,"rest_functions.R", sep = "/")); 
