@@ -31,3 +31,6 @@ This repo will house R scripts for retrieving NWIS historic gage data, processin
 	
 	3.6.18
 	-merged ICE and other NO DATA handling 
+	
+	3.23.18
+	-gwl and flow look good
