@@ -37,3 +37,6 @@ This repo will house R scripts for retrieving NWIS historic gage data, processin
 	
 	3.27.18
 	-gwl and flow look good
+	
+	4.2.18
+	-gwl and flow look good
