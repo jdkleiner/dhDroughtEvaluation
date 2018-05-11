@@ -13,15 +13,12 @@ require(data.table)
 require(zoo)
 library(httr)
 
-#Specify the site of interest
-#site <- "http://localhost/d.dh"    
-site <- "http://deq1.bse.vt.edu/d.dh" 
-#fxn_locations <- "C:\\Users\\nrf46657\\Desktop\\VAHydro Development\\Drought\\server_code\\"          #Specify location of supporting function .R files
-
-#Cross-site Request Forgery Protection (Token required for POST and PUT operations)
-csrf_url <- paste(site,"/restws/session/token/",sep="");
-csrf <- GET(url=csrf_url,authenticate("FANCYUSERNAME","FANCYPASSWORD"));
-token <- content(csrf);
+source("/var/www/R/config.local.private"); 
+# load libraries
+source(paste(vahydro_directory,"rest_functions.R", sep = "/")); 
+source(paste(hydro_tools,"auth.private", sep = "/"));#load rest username and password, contained in auth.private file
+token <- rest_token (base_url, token, rest_uname = rest_uname, rest_pw = rest_pw) #token needed for REST
+site <- base_url
 
 
 #Pull in list of all drought USGS well dH Features 
