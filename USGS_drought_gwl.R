@@ -13,20 +13,30 @@ require(data.table)
 require(zoo)
 library(httr)
 
-source("/var/www/R/config.local.private"); 
-# load libraries
-source(paste(vahydro_directory,"rest_functions.R", sep = "/")); 
-source(paste(hydro_tools,"auth.private", sep = "/"));#load rest username and password, contained in auth.private file
-token <- rest_token (base_url, token, rest_uname = rest_uname, rest_pw = rest_pw) #token needed for REST
-site <- base_url
+site <- "http://deq2.bse.vt.edu/d.dh" 
 
+basepath='C:\\Users\\nrf46657\\Desktop\\VAHydro Development\\GitHub\\dhDroughtEvaluation\\';
+source(paste(basepath,'config.local.private',sep='/'));
+
+#source("/var/www/R/config.local.private"); 
+# load libraries
+#source(paste(vahydro_directory,"rest_functions.R", sep = "/")); 
+#source(paste(hydro_tools,"auth.private", sep = "/"));#load rest username and password, contained in auth.private file
+#token <- rest_token (base_url, token, rest_uname = rest_uname, rest_pw = rest_pw) #token needed for REST
+#site <- base_url
+#Load Functions               
+source(paste(hydro_tools,"VAHydro-2.0/rest_functions.R", sep = "/")); 
+rest_uname = FALSE;
+rest_pw = FALSE;
+source(paste(hydro_tools,"auth.private", sep = "/"));#load rest username and password, contained in auth.private file
+token <- rest_token(site, token, rest_uname, rest_pw);
 
 #Pull in list of all drought USGS well dH Features 
 URL <- paste(site,"drought-wells-export", sep = "/");
 well_list <- read.table(URL,header = TRUE, sep = ",")
 hydrocodes <- well_list$hydrocode
 
-#j <-1
+#j <-9
 
 #Begin loop to run through each USGS gage 
 for (j in 1:length(hydrocodes)) {
