@@ -40,3 +40,14 @@ This repo will house R scripts for retrieving NWIS historic gage data, processin
 	
 	4.2.18
 	-gwl and flow look good
+	
+	9.17.18
+	-gwl and flow look good
+	
+	10.18.18
+	-gwl and flow look good
+	
+	11.13.18
+	-gwl and flow hadn't updated since tsendtime = 11/3/2018
+	-needed to update REST user password on d.dh 
+	-gwl and flow look good	after updating password and running from deq1
