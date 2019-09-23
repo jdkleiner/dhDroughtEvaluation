@@ -15,9 +15,9 @@ library(httr)
 library(stringr)
 
 #SERVER:
-#source("/var/www/R/config.local.private"); 
+source("/var/www/R/config.local.private"); 
 #LOCAL:
-source("C:/Users/nrf46657/Desktop/VAHydro Development/GitHub/hydro-tools/config.local.private");
+#source("C:/Users/nrf46657/Desktop/VAHydro Development/GitHub/hydro-tools/config.local.private");
 
 # load libraries
 source(paste(vahydro_directory,"rest_functions.R", sep = "/")); 
