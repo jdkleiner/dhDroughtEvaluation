@@ -14,9 +14,9 @@ require(zoo)
 library(httr)
 
 #SERVER:
-source("/var/www/R/config.local.private"); 
+#source("/var/www/R/config.local.private"); 
 #LOCAL:
-#source("C:/Users/nrf46657/Desktop/VAHydro Development/GitHub/hydro-tools/config.local.private");
+source("C:/Users/nrf46657/Desktop/VAHydro Development/GitHub/hydro-tools/config.local.private");
 
 
 
@@ -32,7 +32,7 @@ URL <- paste(site,"drought-wells-export", sep = "/");
 well_list <- read.table(URL,header = TRUE, sep = ",")
 hydrocodes <- well_list$hydrocode
 
-#j <-1
+#j <-6
 
 #Begin loop to run through each USGS gage 
 for (j in 1:length(hydrocodes)) {
