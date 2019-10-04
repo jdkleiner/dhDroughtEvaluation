@@ -12,13 +12,19 @@ library(dataRetrieval) #https://cran.r-project.org/web/packages/dataRetrieval/da
 require(data.table)
 require(zoo)
 library(httr)
+library(lubridate) #required for yearfunction()
+library(doBy) #required for summaryBy()
+
+yearfunction<-function(dataframe, datecolumn) {
+  year(dataframe[,datecolumn])
+}
+
+
 
 #SERVER:
 #source("/var/www/R/config.local.private"); 
 #LOCAL:
 source("C:/Users/nrf46657/Desktop/VAHydro Development/GitHub/hydro-tools/config.local.private");
-
-
 
 # load libraries
 source(paste(vahydro_directory,"rest_functions.R", sep = "/")); 
@@ -60,23 +66,8 @@ for (j in 1:length(hydrocodes)) {
   print(head(data))
   
   data$max <- as.numeric(as.character(data[,5])) #COPY MAX (Depth to water level) COLUMN AND FORCE 'NA's WHERE THERE IS MISSING DATA
-#  data$min <- as.numeric(as.character(data[,7])) #COPY MIN (Depth to water level) COLUMN AND FORCE 'NA's WHERE THERE IS MISSING DATA
-#  data$mean <- rowMeans(subset(data, select = c(max, min)), na.rm = TRUE) #CREATE COLUMN OF MEAN OF MAX AND MIN COLUMNS
-  
   data$periodic <- as.numeric(as.character(data[,9])) #CREATE COLUMN OF PERIODIC MEASUREMENTS
-  
-#------------------------------------------------------------------------------------
-  #url <- paste("https://groundwaterwatch.usgs.gov/mys/mys-371644077244601.htm?ncd=",sep="")
-  #print(paste("Retrieving Data from NWIS using:",url))
-  #mediandata <- read.table(url,header = TRUE, sep = "\t")  
-  
-  
-  
-  
-  
-  
-#------------------------------------------------------------------------------------
-  
+
   #most recent max gwl reading 
   latest_row <- length(data$max)
   latest_row <- data[latest_row,]
@@ -91,20 +82,7 @@ for (j in 1:length(hydrocodes)) {
     gw_lvl <- as.numeric(as.character(gw_lvl))
   }
   print(gw_lvl) #print most recent daily mean gwl reading 
-  
-  # rollmean_7day <- rollapply(data$mean, 7, mean, na.rm=TRUE)  #BUILD VECTOR OF 7-DAY ROLLING MEAN OF DAILY MEAN GWL
-  # rollmean_7day  <- append(rollmean_7day , NA, after = 0)   #ROLLING MEAN FUNCTION EXCLUDED FIRST 6 DATA VALUES
-  # rollmean_7day  <- append(rollmean_7day , NA, after = 0)     #MUST MANUALLY SET 'NA's FOR THE FIRST 6 VALUES
-  # rollmean_7day  <- append(rollmean_7day , NA, after = 0)
-  # rollmean_7day  <- append(rollmean_7day , NA, after = 0)
-  # rollmean_7day  <- append(rollmean_7day , NA, after = 0)
-  # rollmean_7day  <- append(rollmean_7day , NA, after = 0)
-  # data$rollmean_7day <- rollmean_7day                         #CREATE COLUMN OF 7-DAY ROLLING MEANS ON DATAFRAME
-  
-#  latest_row <- data[length(data$rollmean_7day),] #most recent 7-day rolling avg gwl
-#  gw_lvl <- latest_row$rollmean_7day
-  print(gw_lvl) #print most recent 7-day rolling average daily mean gwl reading 
-  
+
   #Create dataframe of all month's names and numeric values
   months <- c('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')
   months_num <- c('-01-','-02-','-03-','-04-','-05-','-06-','-07-','-08-','-09-','-10-','-11-','-12-')
@@ -117,71 +95,48 @@ for (j in 1:length(hydrocodes)) {
   month <- toString(month)
   month_num <- month_num$months_num
   
-  #Determine The percentiles for this month based on 7-Day Average Streamflow
+  #Determine historic percentiles for current month using continuous and periodic measurments
   data [ grep( month_num , data$datetime, perl= TRUE ), "month" ] <- month
   month_rows <- which(data$month == month)
-  month_data <- data[month_rows,]
-  #write.csv(month_data, "month_data.csv")
-  
-  #remove rows with emptys
-  # month_data <- month_data[!(is.na(month_data$rollmean_7day) | month_data$rollmean_7day==""), ]
-  # month_gwls <- month_data$rollmean_7day
-  # month_gwls <- as.numeric(as.character(month_gwls))
-  #tail(month_gwls)
-  
-   #
-   continuous_data <- month_data[!(is.na(month_data$max) | month_data$max==""), ]
-   continuous_data$gwl_value <- continuous_data$max
-   
-  # continuous_gwls <- continuous_data$max
-  # continuous_gwls <- as.numeric(as.character(continuous_gwls))
-  
-   periodic_data <- month_data[!(is.na(month_data$periodic) | month_data$periodic==""), ]
-   periodic_data$gwl_value <- periodic_data$periodic
-   
-   
-   month_data_all <- rbind(periodic_data,continuous_data)
-   
-   month_data_all$year <- yearfunction(month_data_all, "datetime")
-   month_data_medians <- summaryBy(gwl_value ~ year, data = month_data_all, FUN = list(median))
-   
-   #REMOVE CURRENT YEAR MEDIAN VALUE - CURRENT YEAR WILL NOT BE USED FOR CALCULATING HISTORIC PERCENTILES
-   month_data_medians <- month_data_medians[-length(month_data_medians[,1]),]
+  month_data <- data[month_rows,] #ISOLATE CURRENT MONTH'S DATA
 
-   gwl_medians <- as.numeric(as.character(month_data_medians$gwl_value.median))
-   gwl_medians <- round(gwl_medians,2)
-   
-   quant_num <- c(1, 2, 3, 4, 5, 6, 7, 8, 9)
-   quant <- c(0, 0.05, 0.10, 0.25, 0.5, 0.75, 0.90, 0.95, 1)
-   month_quant <- quantile(gwl_medians, probs =  quant) 
-   round(month_quant,2)
+  #ISOLATE CONTINUOUS DATA FOR CURRENT MONTH
+  continuous_data <- month_data[!(is.na(month_data$max) | month_data$max==""), ]
+  continuous_data$gwl_value <- continuous_data$max
 
-   print(gw_lvl) 
-   #------------------------------------------------------------------------------------ 
-   library(lubridate) #required for yearfunction()
+  #ISOLATE PERIODIC DATA FOR CURRENT MONTH
+  periodic_data <- month_data[!(is.na(month_data$periodic) | month_data$periodic==""), ]
+  periodic_data$gwl_value <- periodic_data$periodic
    
-   yearfunction<-function(dataframe, datecolumn) {
-     year(dataframe[,datecolumn])
-   }
+  #COMBINE CONTINUOUS AND PERIODIC DATA FOR CURRENT MONTH
+  month_data_all <- rbind(periodic_data,continuous_data)
    
- #  continuous_data$year <- yearfunction(continuous_data, "datetime")
+  #ADD YEAR COLUMN AND CALCULATE MEDIAN VALUE FOR EACH YEAR
+  month_data_all$year <- yearfunction(month_data_all, "datetime")
+  month_data_medians <- summaryBy(gwl_value ~ year, data = month_data_all, FUN = list(median))
    
- 
-   library(doBy) #required for summaryBy()
- #  continuous_medians <- summaryBy(max ~ year, data = continuous_data, FUN = list(median))
+  #REMOVE CURRENT YEAR MEDIAN VALUE - CURRENT YEAR WILL NOT BE USED FOR CALCULATING HISTORIC PERCENTILES
+  month_data_medians <- month_data_medians[-length(month_data_medians[,1]),]
+
+  #CREATE VECTOR OF MEDIANS
+  gwl_medians <- as.numeric(as.character(month_data_medians$gwl_value.median))
+  #gwl_medians <- round(gwl_medians,2)
    
-   
-   
- #  periodic_data$year <- yearfunction(periodic_data, "datetime")
- #  periodic_medians <- summaryBy(periodic ~ year, data = periodic_data, FUN = list(median))
-   
-   #------------------------------------------------------------------------------------  
-   
-   
-  # quant_num <- c(1, 2, 3, 4, 5, 6, 7, 8, 9)
-  # quant <- c(0, 0.05, 0.10, 0.25, 0.5, 0.75, 0.90, 0.95, 1)
-  # month_quant <- quantile(month_gwls, probs =  quant) 
-  # 
+  #CALCULATE HISTORIC PERCENTILES FROM MEDIANS
+  quant_num <- c(1, 2, 3, 4, 5, 6, 7, 8, 9)
+  quant <- c(0, 0.05, 0.10, 0.25, 0.5, 0.75, 0.90, 0.95, 1)
+  month_quant <- quantile(gwl_medians, probs =  quant) 
+  month_quant <- round(month_quant,2)
+
+  print(gw_lvl) 
+
+  
+  
+  
+  
+  
+  
+  
   #gw_lvl <-9
   #i<-1
   
