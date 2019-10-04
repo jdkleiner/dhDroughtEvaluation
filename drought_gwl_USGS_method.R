@@ -1,5 +1,5 @@
-#THIS SCRIPT CALCULATES THE CURRENT 7-DAY RUNNING AVERAGE "Depth to water level, feet below land surface (Maximum) level" FOR ALL USGS DROUGHT GAGES 
-#THE CORRESPONDING PERCENTILE IS THEN CALCULATED USING THE HISTORIC "DAILY" "Depth to water level" VALUES FOR THE CURRENT MONTH
+#THIS SCRIPT CALCULATES THE CURRENT "Depth to water level, feet below land surface (Maximum) level" FOR ALL USGS DROUGHT WELLS
+#THE CORRESPONDING PERCENTILE IS THEN CALCULATED USING THE HISTORIC CONTINUOUS AND PERIODIC "Depth to water level" VALUES FOR THE CURRENT MONTH
 #   STORED VIA REST:
 #     drought_status_well (PROPERTY ON Well FEATURE THAT IS UPDATED EACH DAY THE SCRIPT IS RUN)
 #     gwl_7day_ft (TIMESERIES ON Well FEATURE THAT IS CREATED EACH DAY THE SCRIPT IS RUN)
@@ -38,7 +38,7 @@ URL <- paste(site,"drought-wells-export", sep = "/");
 well_list <- read.table(URL,header = TRUE, sep = ",")
 hydrocodes <- well_list$hydrocode
 
-#j <-6
+#j <-1
 #j <-18
 
 #Begin loop to run through each USGS gage 
@@ -127,19 +127,16 @@ for (j in 1:length(hydrocodes)) {
   quant <- c(0, 0.05, 0.10, 0.25, 0.5, 0.75, 0.90, 0.95, 1)
   month_quant <- quantile(gwl_medians, probs =  quant) 
   month_quant <- round(month_quant,2)
-
+  
+  print(month_quant)
   print(gw_lvl) 
 
-  
-  
-  
-  
-  
-  
   
   #gw_lvl <-9
   #i<-1
   
+  
+  #CALCULATE TODAY'S PERCENTILE BASED ON HISTORIC PERCENTIILES
   gw_lvl_round <- round(as.numeric(as.character(gw_lvl)), digits=7)
   if ((gw_lvl_round < round(as.numeric(as.character(month_quant[9])), digits=7)) == 'FALSE') {   #IF RECORD HIGH groundwater level
     rolling_percentile <- 100
@@ -174,289 +171,67 @@ for (j in 1:length(hydrocodes)) {
   print(paste("The Drought Status Propcode for ",siteNumber," is ",nonex_propcode,sep=""))
   
   
+  #################################################################################################
   #--STORE WITH REST 'drought_status_well', 'gwl_7day_ft', and 'nonex_pct'
+  #################################################################################################
   
   #Set values to dH variables
   gwl_7day_ft <- gw_lvl
-  nonex_propcode <- nonex_propcode
-  nonex_propvaue <- rolling_percentile
-  
   nonex_propcode <- as.numeric(as.character(nonex_propcode))
-  nonex_propvaue <- as.numeric(as.character(nonex_propvaue))
-  
+  nonex_propvalue <- round(as.numeric(as.character(rolling_percentile)),2)
   
   #Convert USGS well No. to dH Hydrocode 
   hydrocode <- paste("usgs_",siteNumber, sep="")
   
-  #Retrieve dH usgsgage feature 
-  well_feature <- GET(paste(site,"/dh_feature.json",sep=""), 
-                      add_headers(HTTP_X_CSRF_TOKEN = token),
-                      query = list(bundle = 'well',
-                                   hydrocode = hydrocode
-                      ), 
-                      encode = "json"
-  );
-  well <- content(well_feature);
-  well <- well$list[[1]];
-  hydroid = well$hydroid[[1]]
+  #Retrieve dH usgsgage feature from vahydro
+  well_inputs <- list(hydrocode=hydrocode)
+  well_feature <- getFeature(well_inputs,token,base_url)
+  hydroid <- as.character(well_feature$hydroid[1])
   
-  #Convert start and endate to UNIX timestamp (to be used with timeseries)
-  startdate <- as.numeric(as.POSIXct(Sys.Date()-6,origin = "1970-01-01", tz = "GMT"))
-  enddate <- as.numeric(as.POSIXct(Sys.Date(),origin = "1970-01-01", tz = "GMT"))
   
-  #Set dH Variables 
-  propvars <- c(
-    'gwl_7day_ft',
-    'drought_status_well'
-  );
-  
-  proplist <- list(
-    gwl_7day_ft = FALSE,
-    drought_status_well = FALSE
-  );
-  
-  #i <- 1
-  
-  #Begin Loop to REST properties one at a time 
-  for (i in 1:length(propvars)) {
-    
-    propdef_url<- paste(site,"/?q=vardefs.tsv/all/drought",sep="");
-    propdef_table <- read.table(propdef_url,header = TRUE, sep = "\t")    
-    
-    varkey <- propvars[i];
-    print(varkey); 
-    
-    # retrieve varid
-    varid <- propdef_table[1][which(propdef_table$varkey == varkey),];
-    print(paste("Found varid ", varid));
-    
-    if ((varkey == 'gwl_7day_ft')) {
-      tsvalue = gwl_7day_ft;
-      tstime <- startdate 
-      tsendtime <- enddate 
+      #------CREATE/UPDATE 'gwl_7day_ft' TIMESERIES    
+       tsbody = list(
+         featureid = hydroid,
+         varkey = 'gwl_7day_ft',
+         entity_type = 'dh_feature',
+         tsvalue = gwl_7day_ft,
+         tstime = as.numeric(as.POSIXct(Sys.Date()-6,origin = "1970-01-01", tz = "GMT")),
+         tsendtime = as.numeric(as.POSIXct(Sys.Date(),origin = "1970-01-01", tz = "GMT")),
+         tscode = NULL
+       );
       
-      #Format timeseries 
-      pf <- list(
-        varid = varid,
-        tsvalue = tsvalue,
-        tstime = tstime,
-        tsendtime = tsendtime,
-        tscode = '',
-        featureid = hydroid,
-        entity_type = 'dh_feature'
-      );  
+      post_ts <- postTimeseries(tsbody, base_url)
+      tid <- post_ts
       
-      
-      #-----RETRIEVE TIMESERIES   
-      timeseries_gwl <- GET(paste(site,"/dh_timeseries.json",sep=""), 
-                            add_headers(HTTP_X_CSRF_TOKEN = token),
-                            query = list(
-                              featureid = pf$featureid,
-                              varid = varid,
-                              tstime = pf$tstime,
-                              tsendtime = pf$tsendtime,
-                              entity_type = 'dh_feature'
-                            ), 
-                            encode = "json"
-      );
-      timeseries_gwl <- content(timeseries_gwl);
-      
-      #------CREATE TIMESERIES IF ONE DOES NOT EXIST     
-      pbody = list(
-        featureid = pf$featureid,
-        varid = pf$varid,
-        entity_type = 'dh_feature',
-        tsvalue = pf$tsvalue,
-        tstime = pf$tstime,
-        tsendtime = pf$tsendtime,
-        tscode = NULL
-      );
-      
-      #Update TIMESERIES if it exists    
-      if (length(timeseries_gwl$list)) {
-        timeseries_gwl <- timeseries_gwl$list[[1]];
-        tid <-  timeseries_gwl$list[[1]]$tid
-        print(paste("tid: ", tid, "tsvalue", pbody$tsvalue));
-        #** PUT - Update
-        print ("Timeseries exists - PUT gwl_7day_ft");
-        sub <- PUT(paste(site,"/dh_timeseries/",tid,sep=''), 
-                   add_headers(HTTP_X_CSRF_TOKEN = token),
-                   body = pbody, 
-                   encode = "json"
-        );
-        #Create Timeseries if it does not exist        
-      } else {
-        print ("Timeseries does not exist - POST gwl_7day_ft");
-        #** POST - Insert
-        x <- POST(paste(site,"/dh_timeseries/",sep=""), 
-                  add_headers(HTTP_X_CSRF_TOKEN = token),
-                  body = pbody,
-                  encode = "json"
-        );
-      }
-      
-      
-      #------ATTATCH PROPERTY 'nonex_pct' TO TIMESERIES   
-      
-      #-----RETRIEVE TIMESERIES   
-      timeseries_gwl <- GET(paste(site,"/dh_timeseries.json",sep=""), 
-                            add_headers(HTTP_X_CSRF_TOKEN = token),
-                            query = list(
-                              featureid = pf$featureid,
-                              varid = varid,
-                              tstime = pf$tstime,
-                              tsendtime = pf$tsendtime,
-                              entity_type = 'dh_feature'
-                            ), 
-                            encode = "json"
-      );
-      timeseries_gwl <- content(timeseries_gwl)
-      tid <- timeseries_gwl$list[[1]]$tid
-      
-      
-      #---------------------------------------------------------
-      # retrieve varid
-      nonex_pct_varid <- propdef_table[1][which(propdef_table$varkey == 'nonex_pct'),];
-      print(paste("Found nonex_pct varid ", nonex_pct_varid));
-      
-      #Format property  
-      pf <- list(
-        varid =  nonex_pct_varid,
-        propname = 'nonex_pct',
-        propvalue = nonex_propvaue,
-        propcode = nonex_propcode,
-        tid = tid,
-        bundle = 'dh_properties',
-        entity_type = 'dh_timeseries'
-      );  
-      
-      #Retrieve property if it exists   
-      sp <- GET(
-        paste(site,"/dh_properties.json",sep=""), 
-        add_headers(HTTP_X_CSRF_TOKEN = token),
-        query = list(
-          bundle = 'dh_properties',
-          #tid = pf$tid,
-          featureid = pf$tid,
-          varid = pf$varid,
-          entity_type = 'dh_timeseries'
-          
-        ), 
-        encode = "json"
-      );
-      spc <- content(sp);  
-      
+      #------CREATE/UPDATE 'nonex_pct' PROPERTY ATTACHED TO 'gwl_7day_ft' TIMESERIES   
       pbody = list(
         bundle = 'dh_properties',
-        # tid = pf$tid,
-        featureid = pf$tid,
-        varid = pf$varid,
+        featureid = tid,
+        varkey = 'nonex_pct',
         entity_type = 'dh_timeseries',
-        propname = pf$propname,
-        propvalue = pf$propvalue,
-        propcode = pf$propcode
+        propname = 'nonex_pct',
+        propvalue = nonex_propvalue,
+        propcode = nonex_propcode
       );
       
-      #Update property if it exists    
-      if (length(spc$list)) {
-        spe <- spc$list[[1]];
-        print ("Property exists - PUT nonex_pct");
-        pid <- spe$pid[[1]];
-        print(paste("pid: ", pid, "propcode", pbody$propcode));
-        #** PUT - Update
-        sub <- PUT(paste(site,"/dh_properties/",pid,sep=''), 
-                   add_headers(HTTP_X_CSRF_TOKEN = token),
-                   body = pbody, 
-                   encode = "json"
-        );
-        #Create property if it does not exist        
-      } else {
-        print ("Property does not exist - POST nonex_pct");
-        #** POST - Insert
-        x <- POST(paste(site,"/dh_properties/",sep=""), 
-                  add_headers(HTTP_X_CSRF_TOKEN = token),
-                  body = pbody,
-                  encode = "json"
-        );
-      } 
+      post_prop <- postProperty(inputs = pbody, base_url = base_url)
       
       
-      #------SET drought_status_well PROPERTY    
-      #----------------------------------------------------------------------------   
-    } else { ((varkey == 'drought_status_well')) 
-      propval = nonex_propvaue;
-      
-      
-      #Format property  
-      pf <- list(
-        varid = varid,
-        propname = varkey,
-        propvalue = propval,
-        propcode = '',
+      #------UPDATE 'drought_status_well' PROPERTY ATTACHED TO WELL 
+      status_pbody = list(
+        bundle = 'dh_properties',
         featureid = hydroid,
-        bundle = 'dh_properties',
-        entity_type = 'dh_feature'
-      );  
-      
-      #Retrieve property if it exists   
-      sp <- GET(
-        paste(site,"/dh_properties.json",sep=""), 
-        add_headers(HTTP_X_CSRF_TOKEN = token),
-        query = list(
-          bundle = 'dh_properties',
-          featureid = pf$featureid,
-          varid = varid,
-          entity_type = 'dh_feature'
-          
-        ), 
-        encode = "json"
-      );
-      spc <- content(sp);  
-      
-      pbody = list(
-        bundle = 'dh_properties',
-        featureid = pf$featureid,
-        varid = pf$varid,
+        varkey = 'drought_status_well',
         entity_type = 'dh_feature',
-        propname = pf$propname,
-        propvalue = pf$propvalue,
-        propcode = NULL
+        propname = 'drought_status_well'
       );
-      
-      if ((varkey == 'gwl_7day_ft')) {
-        pbody$propcode = NULL;
-        pbody$propvalue = gwl_7day_ft;
-      } else { ((varkey == 'drought_status_well')) 
-        pbody$propcode = nonex_propcode;
-        pbody$propvalue = nonex_propvaue;
-      }
-      
-      
-      #Update property if it exists    
-      if (length(spc$list)) {
-        spe <- spc$list[[1]];
-        print ("Property exists - PUT drought_status_well");
-        pid <- spe$pid[[1]];
-        print(paste("pid: ", pid, "propcode", pbody$propcode));
-        #** PUT - Update
-        sub <- PUT(paste(site,"/dh_properties/",pid,sep=''), 
-                   add_headers(HTTP_X_CSRF_TOKEN = token),
-                   body = pbody, 
-                   encode = "json"
-        );
-        #Create property if it does not exist        
-      } else {
-        print ("Property does not exist - POST drought_status_well");
-        #** POST - Insert
-        x <- POST(paste(site,"/dh_properties/",sep=""), 
-                  add_headers(HTTP_X_CSRF_TOKEN = token),
-                  body = pbody,
-                  encode = "json"
-        );
-      }
-      
-    } #end of drought_status_well property loop  
-    
-  } #end of REST LOOP
+      get_status_prop <- getProperty(inputs = status_pbody, base_url = base_url)
+
+      status_pbody$pid <- get_status_prop$pid
+      status_pbody$propvalue <- nonex_propvalue
+      status_pbody$propcode <- nonex_propcode
+  
+      post_status_prop <- postProperty(inputs = status_pbody, base_url = base_url)
+
 } #end of well feature loop
 
