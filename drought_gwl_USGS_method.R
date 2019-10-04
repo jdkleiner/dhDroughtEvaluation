@@ -60,38 +60,49 @@ for (j in 1:length(hydrocodes)) {
   print(head(data))
   
   data$max <- as.numeric(as.character(data[,5])) #COPY MAX (Depth to water level) COLUMN AND FORCE 'NA's WHERE THERE IS MISSING DATA
-  data$min <- as.numeric(as.character(data[,7])) #COPY MIN (Depth to water level) COLUMN AND FORCE 'NA's WHERE THERE IS MISSING DATA
-  data$mean <- rowMeans(subset(data, select = c(max, min)), na.rm = TRUE) #CREATE COLUMN OF MEAN OF MAX AND MIN COLUMNS
+#  data$min <- as.numeric(as.character(data[,7])) #COPY MIN (Depth to water level) COLUMN AND FORCE 'NA's WHERE THERE IS MISSING DATA
+#  data$mean <- rowMeans(subset(data, select = c(max, min)), na.rm = TRUE) #CREATE COLUMN OF MEAN OF MAX AND MIN COLUMNS
   
   data$periodic <- as.numeric(as.character(data[,9])) #CREATE COLUMN OF PERIODIC MEASUREMENTS
   
+#------------------------------------------------------------------------------------
+  #url <- paste("https://groundwaterwatch.usgs.gov/mys/mys-371644077244601.htm?ncd=",sep="")
+  #print(paste("Retrieving Data from NWIS using:",url))
+  #mediandata <- read.table(url,header = TRUE, sep = "\t")  
   
-  #most recent gwl reading (mean of daily max and min depth to water levels)
-  latest_row <- length(data$mean)
+  
+  
+  
+  
+  
+#------------------------------------------------------------------------------------
+  
+  #most recent max gwl reading 
+  latest_row <- length(data$max)
   latest_row <- data[latest_row,]
-  gw_lvl <- latest_row$mean
+  gw_lvl <- latest_row$max
   gw_lvl <- as.numeric(as.character(gw_lvl)) 
   #need to handle 'EDT' for most recent value (use the day before)
   if  (is.na(gw_lvl) == TRUE) {
-    latest_row <- length(data$mean)
+    latest_row <- length(data$max)
     latest_row <- latest_row - 1
     latest_row <- data[latest_row,]
-    gw_lvl <- latest_row$mean
+    gw_lvl <- latest_row$max
     gw_lvl <- as.numeric(as.character(gw_lvl))
   }
   print(gw_lvl) #print most recent daily mean gwl reading 
   
-  rollmean_7day <- rollapply(data$mean, 7, mean, na.rm=TRUE)  #BUILD VECTOR OF 7-DAY ROLLING MEAN OF DAILY MEAN GWL
-  rollmean_7day  <- append(rollmean_7day , NA, after = 0)   #ROLLING MEAN FUNCTION EXCLUDED FIRST 6 DATA VALUES
-  rollmean_7day  <- append(rollmean_7day , NA, after = 0)     #MUST MANUALLY SET 'NA's FOR THE FIRST 6 VALUES
-  rollmean_7day  <- append(rollmean_7day , NA, after = 0)
-  rollmean_7day  <- append(rollmean_7day , NA, after = 0)
-  rollmean_7day  <- append(rollmean_7day , NA, after = 0)
-  rollmean_7day  <- append(rollmean_7day , NA, after = 0)
-  data$rollmean_7day <- rollmean_7day                         #CREATE COLUMN OF 7-DAY ROLLING MEANS ON DATAFRAME
+  # rollmean_7day <- rollapply(data$mean, 7, mean, na.rm=TRUE)  #BUILD VECTOR OF 7-DAY ROLLING MEAN OF DAILY MEAN GWL
+  # rollmean_7day  <- append(rollmean_7day , NA, after = 0)   #ROLLING MEAN FUNCTION EXCLUDED FIRST 6 DATA VALUES
+  # rollmean_7day  <- append(rollmean_7day , NA, after = 0)     #MUST MANUALLY SET 'NA's FOR THE FIRST 6 VALUES
+  # rollmean_7day  <- append(rollmean_7day , NA, after = 0)
+  # rollmean_7day  <- append(rollmean_7day , NA, after = 0)
+  # rollmean_7day  <- append(rollmean_7day , NA, after = 0)
+  # rollmean_7day  <- append(rollmean_7day , NA, after = 0)
+  # data$rollmean_7day <- rollmean_7day                         #CREATE COLUMN OF 7-DAY ROLLING MEANS ON DATAFRAME
   
-  latest_row <- data[length(data$rollmean_7day),] #most recent 7-day rolling avg gwl
-  gw_lvl <- latest_row$rollmean_7day
+#  latest_row <- data[length(data$rollmean_7day),] #most recent 7-day rolling avg gwl
+#  gw_lvl <- latest_row$rollmean_7day
   print(gw_lvl) #print most recent 7-day rolling average daily mean gwl reading 
   
   #Create dataframe of all month's names and numeric values
@@ -113,15 +124,64 @@ for (j in 1:length(hydrocodes)) {
   #write.csv(month_data, "month_data.csv")
   
   #remove rows with emptys
-  month_data <- month_data[!(is.na(month_data$rollmean_7day) | month_data$rollmean_7day==""), ]
-  month_gwls <- month_data$rollmean_7day
-  month_gwls <- as.numeric(as.character(month_gwls))
+  # month_data <- month_data[!(is.na(month_data$rollmean_7day) | month_data$rollmean_7day==""), ]
+  # month_gwls <- month_data$rollmean_7day
+  # month_gwls <- as.numeric(as.character(month_gwls))
   #tail(month_gwls)
   
-  quant_num <- c(1, 2, 3, 4, 5, 6, 7, 8, 9)
-  quant <- c(0, 0.05, 0.10, 0.25, 0.5, 0.75, 0.90, 0.95, 1)
-  month_quant <- quantile(month_gwls, probs =  quant) 
+   #
+   continuous_data <- month_data[!(is.na(month_data$max) | month_data$max==""), ]
+   continuous_data$gwl_value <- continuous_data$max
+   
+  # continuous_gwls <- continuous_data$max
+  # continuous_gwls <- as.numeric(as.character(continuous_gwls))
   
+   periodic_data <- month_data[!(is.na(month_data$periodic) | month_data$periodic==""), ]
+   periodic_data$gwl_value <- periodic_data$periodic
+   
+   
+   month_data_all <- rbind(periodic_data,continuous_data)
+   
+   month_data_all$year <- yearfunction(month_data_all, "datetime")
+   month_data_medians <- summaryBy(gwl_value ~ year, data = month_data_all, FUN = list(median))
+   
+   #REMOVE CURRENT YEAR MEDIAN VALUE - CURRENT YEAR WILL NOT BE USED FOR CALCULATING HISTORIC PERCENTILES
+   month_data_medians <- month_data_medians[-length(month_data_medians[,1]),]
+
+   gwl_medians <- as.numeric(as.character(month_data_medians$gwl_value.median))
+   gwl_medians <- round(gwl_medians,2)
+   
+   quant_num <- c(1, 2, 3, 4, 5, 6, 7, 8, 9)
+   quant <- c(0, 0.05, 0.10, 0.25, 0.5, 0.75, 0.90, 0.95, 1)
+   month_quant <- quantile(gwl_medians, probs =  quant) 
+   round(month_quant,2)
+
+   print(gw_lvl) 
+   #------------------------------------------------------------------------------------ 
+   library(lubridate) #required for yearfunction()
+   
+   yearfunction<-function(dataframe, datecolumn) {
+     year(dataframe[,datecolumn])
+   }
+   
+ #  continuous_data$year <- yearfunction(continuous_data, "datetime")
+   
+ 
+   library(doBy) #required for summaryBy()
+ #  continuous_medians <- summaryBy(max ~ year, data = continuous_data, FUN = list(median))
+   
+   
+   
+ #  periodic_data$year <- yearfunction(periodic_data, "datetime")
+ #  periodic_medians <- summaryBy(periodic ~ year, data = periodic_data, FUN = list(median))
+   
+   #------------------------------------------------------------------------------------  
+   
+   
+  # quant_num <- c(1, 2, 3, 4, 5, 6, 7, 8, 9)
+  # quant <- c(0, 0.05, 0.10, 0.25, 0.5, 0.75, 0.90, 0.95, 1)
+  # month_quant <- quantile(month_gwls, probs =  quant) 
+  # 
   #gw_lvl <-9
   #i<-1
   
