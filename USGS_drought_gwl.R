@@ -21,8 +21,11 @@ source("/var/www/R/config.local.private");
 #LOCAL:
 #source("C:/Users/nrf46657/Desktop/VAHydro Development/GitHub/hydro-tools/config.local.private");
 
+#print(paste("vahydro_directory = ", vahydro_directory,sep=""))
+print(paste("hydro_tools = ",hydro_tools,sep=""))
+
 # load libraries
-source(paste(vahydro_directory,"rest_functions.R", sep = "/")); 
+source(paste(hydro_tools,"VAHydro-2.0/rest_functions.R", sep = "/")); 
 source(paste(hydro_tools,"auth.private", sep = "/"));#load rest username and password, contained in auth.private file
 token <- rest_token (base_url, token, rest_uname = rest_uname, rest_pw = rest_pw) #token needed for REST
 site <- base_url
