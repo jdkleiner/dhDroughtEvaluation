@@ -37,7 +37,7 @@ well_list <- read.table(URL,header = TRUE, sep = ",")
 hydrocodes <- well_list$hydrocode
 
 #j <-1
-#j <-18
+#j <-17
 
 #Begin loop to run through each USGS gage 
 for (j in 1:length(hydrocodes)) {
@@ -199,7 +199,8 @@ for (j in 1:length(hydrocodes)) {
        );
       
       post_ts <- postTimeseries(tsbody, base_url)
-      tid <- post_ts
+      get_ts <- getTimeseries(inputs = tsbody, base_url = base_url) 
+      tid <- get_ts$tid
       
       #------CREATE/UPDATE 'nonex_pct' PROPERTY ATTACHED TO 'gwl_7day_ft' TIMESERIES   
       pbody = list(
@@ -207,11 +208,16 @@ for (j in 1:length(hydrocodes)) {
         featureid = tid,
         varkey = 'nonex_pct',
         entity_type = 'dh_timeseries',
-        propname = 'nonex_pct',
-        propvalue = nonex_propvalue,
-        propcode = nonex_propcode
+        propname = 'nonex_pct'
       );
-      
+     
+      get_nonex_pct_prop <- getProperty(inputs = pbody, base_url = base_url)
+      #update property if it exists
+      if (length(get_nonex_pct_prop) != 1){
+        pbody$pid <- get_nonex_pct_prop$pid
+      }
+      pbody$propvalue <- nonex_propvalue
+      pbody$propcode <- nonex_propcode
       post_prop <- postProperty(inputs = pbody, base_url = base_url)
       
       
