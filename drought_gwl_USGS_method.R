@@ -12,13 +12,8 @@ library(dataRetrieval) #https://cran.r-project.org/web/packages/dataRetrieval/da
 require(data.table)
 require(zoo)
 library(httr)
-library(lubridate) #required for yearfunction()
+library(lubridate) #required for year()
 library(doBy) #required for summaryBy()
-
-yearfunction<-function(dataframe, datecolumn) {
-  year(dataframe[,datecolumn])
-}
-
 
 
 #SERVER:
@@ -112,7 +107,7 @@ for (j in 1:length(hydrocodes)) {
   month_data_all <- rbind(periodic_data,continuous_data)
    
   #ADD YEAR COLUMN AND CALCULATE MEDIAN VALUE FOR EACH YEAR
-  month_data_all$year <- yearfunction(month_data_all, "datetime")
+  month_data_all$year <- year(month_data_all[,"datetime"])
   month_data_medians <- summaryBy(gwl_value ~ year, data = month_data_all, FUN = list(median))
    
   #REMOVE CURRENT YEAR MEDIAN VALUE - CURRENT YEAR WILL NOT BE USED FOR CALCULATING HISTORIC PERCENTILES
