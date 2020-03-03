@@ -17,9 +17,9 @@ library(doBy) #required for summaryBy()
 
 
 #SERVER:
-source("/var/www/R/config.local.private"); 
+#source("/var/www/R/config.local.private"); 
 #LOCAL:
-#source("C:/Users/nrf46657/Desktop/VAHydro Development/GitHub/hydro-tools/config.local.private");
+source("C:/Users/nrf46657/Desktop/VAHydro Development/GitHub/hydro-tools/config.local.private");
 
 #print(paste("vahydro_directory = ", vahydro_directory,sep=""))
 print(paste("hydro_tools = ",hydro_tools,sep=""))
