@@ -13,7 +13,7 @@ require(data.table)
 require(zoo)
 library(httr)
 library(lubridate) #required for year()
-library(doBy) #required for summaryBy()
+#library(doBy) #required for summaryBy()
 
 
 #SERVER:
@@ -111,8 +111,23 @@ for (j in 1:length(hydrocodes)) {
    
   #ADD YEAR COLUMN AND CALCULATE MEDIAN VALUE FOR EACH YEAR
   month_data_all$year <- year(month_data_all[,"datetime"])
-  month_data_medians <- summaryBy(gwl_value ~ year, data = month_data_all, FUN = list(median))
+#  month_data_medians <- summaryBy(gwl_value ~ year, data = month_data_all, FUN = list(median))
    
+  #CALCULATE MEDIAN VALUE FOR EACH YEAR 
+  #==================================================================
+  #=== SQL Version ==================================================
+  library(sqldf)
+  month_data_medians <- paste("SELECT year,
+              median(gwl_value) AS 'gwl_value.median'
+              FROM month_data_all 
+              GROUP BY year
+              ",sep="")
+  month_data_medians <- sqldf(month_data_medians)
+  #==================================================================
+  #==================================================================
+  
+  
+  
   #REMOVE CURRENT YEAR MEDIAN VALUE - CURRENT YEAR WILL NOT BE USED FOR CALCULATING HISTORIC PERCENTILES
   month_data_medians <- month_data_medians[-length(month_data_medians[,1]),]
 
