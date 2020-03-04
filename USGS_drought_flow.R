@@ -20,11 +20,10 @@ source("/var/www/R/config.local.private");
 #source("C:/Users/nrf46657/Desktop/VAHydro Development/GitHub/hydro-tools/config.local.private");
 
 # load libraries
-source(paste(vahydro_directory,"rest_functions.R", sep = "/")); 
+source(paste(hydro_tools,"VAHydro-2.0/rest_functions.R", sep = "/")); 
 source(paste(hydro_tools,"auth.private", sep = "/"));#load rest username and password, contained in auth.private file
 token <- rest_token (base_url, token, rest_uname = rest_uname, rest_pw = rest_pw) #token needed for REST
 site <- base_url
-
 
 #https://cran.r-project.org/web/packages/waterData/waterData.pdf
 #https://cran.r-project.org/web/packages/dataRetrieval/dataRetrieval.pdf
@@ -40,7 +39,7 @@ USGS_GAGES <- gagelist$USGS_GAGES
 
 #j<-10
 #j<-9
-#j<-6
+#j<-8
 
 #Begin loop to run through each USGS gage 
 for (j in 1:length(USGS_GAGES)) {
@@ -80,6 +79,8 @@ gage <- cbind(gage, rollmean_7day )
 latest_row <- gage[length(gage$Date),]
 rolling_7day_avg <- latest_row$rollmean_7day
 
+#Skip gage if rolling_7day_avg NA due to equipment malfunction or other issue
+if (is.na(rolling_7day_avg)){next}
 
 #Create dataframe of all month's names and numeric values
 months <- c('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')
